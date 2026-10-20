@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book an appointment · Aurelia Care</title>
+<meta name="description" content="Request an appointment at Aurelia Care hospital. We will call you to confirm a time.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="pubnav"></header>
+<div class="pub narrow" role="main">
+
+  <div class="sec-head page-head"><h1>Book an appointment</h1><p>Fill in the form and our front desk will call you to confirm a time. This is a request, not a confirmed booking.</p></div>
+
+  <div id="done" class="alert-ok hide" role="status" tabindex="-1"></div>
+
+  <form id="bf" class="form" novalidate>
+    <div><label for="fn">Full name</label><input id="fn" name="full_name" autocomplete="name" maxlength="120" required></div>
+    <div><label for="ph">Phone number</label><input id="ph" name="phone" type="tel" autocomplete="tel" maxlength="30" required placeholder="We will call you on this number"></div>
+    <div><label for="em">Email <span class="opt">(optional)</span></label><input id="em" name="email" type="email" autocomplete="email" maxlength="160"></div>
+    <div><label for="dp">Service</label>
+      <select id="dp" name="department">
+        <option>General consultation</option><option>Maternity and women's health</option><option>Laboratory tests</option><option>Not sure, please advise</option>
+      </select></div>
+    <div><label for="dt">Preferred day <span class="opt">(optional)</span></label><input id="dt" name="preferred_date" type="date"></div>
+    <div class="full"><label for="ms">What is the visit about? <span class="opt">(optional)</span></label><textarea id="ms" name="message" rows="3" maxlength="1000" placeholder="A few words are enough. Please do not include detailed medical history."></textarea></div>
+    <div class="hp" aria-hidden="true"><label>Leave this empty <input name="website" tabindex="-1" autocomplete="off"></label></div>
+    <div class="full"><button id="go" type="submit">Send request</button> <span id="err" class="formerr" role="alert"></span></div>
+  </form>
+
+  <p class="fine">If this is an emergency, do not use this form. Call <a data-h="emergencyPhone" href="tel:">emergency</a> or come straight to the emergency entrance.</p>
+
+  <div id="pubfoot"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+publicChrome('book');
+const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+$('dt').min = today.toISOString().slice(0, 10);
+$('bf').onsubmit = async e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target)), out = $('err'); out.textContent = '';
+  if (f.website) return;                                  // hidden field: bots fill it in, people do not
+  const name = f.full_name.trim(), phone = f.phone.trim();
+  if (name.length < 2){ out.textContent = 'Enter your full name.'; $('fn').focus(); return; }
+  if (phone.replace(/\D/g, '').length < 6){ out.textContent = 'Enter a phone number we can call.'; $('ph').focus(); return; }
+  if (!configured){ out.textContent = 'This site is not connected yet. Please call us to book.'; return; }
+  const row = { full_name: name, phone, email: f.email.trim() || null, department: f.department, preferred_date: f.preferred_date || null, message: f.message.trim() || null };
+  $('go').disabled = true; $('go').textContent = 'Sending…';
+  const { error } = await sb.from('appointment_requests').insert(row);
+  $('go').disabled = false; $('go').textContent = 'Send request';
+  if (error){ out.textContent = 'We could not send your request. Please try again, or call us.'; return; }
+  e.target.classList.add('hide');
+  const d = $('done'); d.classList.remove('hide');
+  d.textContent = 'Thank you, ' + name.split(' ')[0] + '. We have your request and will call you on ' + phone + ' to confirm a time.';
+  d.focus();
+};
+</script>
+</body>
+</html>

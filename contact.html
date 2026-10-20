@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact · Aurelia Care</title>
+<meta name="description" content="Contact Aurelia Care hospital: phone, email, address and opening hours.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="pubnav"></header>
+<div class="pub" role="main">
+
+  <div class="sec-head page-head"><h1>Contact us</h1><p>The quickest way to reach us is by phone. For a visit, send an appointment request.</p></div>
+
+  <div class="cards wide">
+    <article class="card"><h3>Call us</h3><p><a data-h="phone" href="tel:">phone</a></p><p>For emergencies call <a data-h="emergencyPhone" href="tel:">emergency</a></p></article>
+    <article class="card"><h3>Email</h3><p><a data-h="email" href="mailto:">email</a></p><p>Please do not send medical emergencies or private health details by email.</p></article>
+    <article class="card"><h3>Visit us</h3><p data-h="address">address</p><p data-h="hours">hours</p></article>
+  </div>
+
+  <section class="emergency" aria-label="Book">
+    <div><b>Need to see a doctor?</b> Send an appointment request and we will call you to confirm.</div>
+    <a class="btn" href="book.html">Book an appointment</a>
+  </section>
+
+  <div id="pubfoot"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>publicChrome('contact');</script>
+</body>
+</html>

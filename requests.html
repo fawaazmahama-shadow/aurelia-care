@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booking requests · Aurelia Care</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+let me, filter = 'new';
+(async () => { me = await guard('requests', { roles:['admin','receptionist'] }); if (me) view(); })();
+async function view(){
+  let q = sb.from('appointment_requests').select('*').order('created_at', { ascending: filter !== 'new' }).limit(300);
+  if (filter) q = q.eq('status', filter);
+  const { data, error } = await q; if (error) return err(error);
+  $('view').innerHTML = `<div class="bar"><h2>Booking requests</h2><select id="flt" style="width:auto">${[['new','New'],['contacted','Contacted'],['booked','Booked'],['declined','Declined'],['','All']].map(([v, t]) => `<option value="${v}" ${v === filter ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+    <p class="hint">Requests sent from the public website. Call the patient to confirm a time, then book it under Appointments and mark the request as booked.</p>
+    ${data.length ? `<div class="wrap"><table><tr><th>Received</th><th>Name</th><th>Phone</th><th>Service</th><th>Preferred day</th><th>Notes</th><th>Status</th><th></th></tr>
+    ${data.map(x => `<tr><td>${esc(new Date(x.created_at).toLocaleString())}</td><td><b>${esc(x.full_name)}</b>${x.email ? `<br><a href="mailto:${esc(x.email)}">${esc(x.email)}</a>` : ''}</td>
+    <td><a href="tel:${esc(String(x.phone).replace(/[^+\d]/g, ''))}">${esc(x.phone)}</a></td><td>${esc(x.department)}</td><td>${esc(x.preferred_date || '')}</td><td>${esc(x.message)}</td>
+    <td><select data-s="${x.id}" style="width:auto">${['new','contacted','booked','declined'].map(s => `<option ${s === x.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
+    <td>${me.role === 'admin' ? `<button class="danger" data-del="${x.id}">Delete</button>` : ''}</td></tr>`).join('')}</table></div>` : '<div class="empty">No requests here.</div>'}`;
+  $('flt').onchange = e => { filter = e.target.value; view(); };
+  document.querySelectorAll('[data-s]').forEach(s => s.onchange = async () => {
+    const { error } = await sb.from('appointment_requests').update({ status: s.value }).eq('id', s.dataset.s); if (error) err(error); view(); });
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (!confirm('Delete this request?')) return;
+    const { error } = await sb.from('appointment_requests').delete().eq('id', b.dataset.del); if (error) return err(error); view(); });
+}
+</script>
+</body>
+</html>

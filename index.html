@@ -3,40 +3,64 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard · Aurelia Care</title>
+<title>Aurelia Care · Hospital in Accra</title>
+<meta name="description" content="Aurelia Care hospital in Accra. Book an appointment online and find our services.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="app"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="app.js"></script>
-<script>
-let me;
-(async () => { me = await guard('index'); if (me) view(); })();
-const count = (t, f) => { const q = sb.from(t).select('id', { count:'exact', head:true }); return f ? f(q) : q; };
-async function view(){
-  const clin = ['admin','doctor','nurse'].includes(me.role), bill = ['admin','receptionist'].includes(me.role);
-  const a = new Date(); a.setHours(0, 0, 0, 0); const b = new Date(a); b.setDate(b.getDate() + 1);
-  const [pt, today, adm, beds, unpaid, low, labs, next] = await Promise.all([
-    count('patients'),
-    count('appointments', q => q.gte('scheduled_at', a.toISOString()).lt('scheduled_at', b.toISOString()).eq('status', 'scheduled')),
-    count('admissions', q => q.is('discharged_at', null)), count('beds'),
-    bill ? sb.from('invoices').select('amount').eq('status', 'unpaid') : null,
-    clin ? sb.from('medicines').select('stock, reorder_level') : null,
-    clin ? count('lab_tests', q => q.eq('status', 'ordered')) : null,
-    sb.from('appointments').select('*, patients(full_name), doctor:profiles!appointments_doctor_id_fkey(full_name)').eq('status', 'scheduled').gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(8)
-  ]);
-  const stat = (n, t) => `<div class="stat"><b>${n}</b><span>${t}</span></div>`;
-  const lowN = low && low.data ? low.data.filter(m => m.stock <= m.reorder_level).length : 0;
-  $('view').innerHTML = `<div class="bar"><h2>Welcome, ${esc((me.full_name || me.email).split(' ')[0])}</h2><span class="pill">${esc(me.role)}</span></div>
-    <div class="stats">
-      ${stat(pt.count ?? 0, 'Patients')}${stat(today.count ?? 0, 'Appointments today')}${stat((adm.count ?? 0) + ' / ' + (beds.count ?? 0), 'Beds occupied')}
-      ${unpaid && unpaid.data ? stat(money(unpaid.data.reduce((t, x) => t + Number(x.amount), 0)), 'Unpaid invoices') : ''}
-      ${labs ? stat(labs.count ?? 0, 'Lab tests awaiting results') : ''}${low ? stat(lowN, 'Medicines to reorder') : ''}
+<header id="pubnav"></header>
+<div class="pub" role="main">
+
+  <section class="hero">
+    <div class="hero-card">
+      <h1>Calm, coordinated care in Accra.</h1>
+      <p>Book a visit online, see what we offer, and let our team take it from there. Your records stay private and in one place.</p>
+      <div class="hero-actions">
+        <a class="btn" href="book.html">Book an appointment</a>
+        <a class="btn alt" href="services.html">See our services</a>
+      </div>
+      <div class="chips"><span class="chip">Online booking</span><span class="chip">Emergency care</span><span class="chip">Secure patient records</span></div>
     </div>
-    <h2 class="sec">Upcoming appointments</h2>
-    ${next.data && next.data.length ? `<div class="wrap"><table><tr><th>When</th><th>Patient</th><th>Doctor</th><th>Reason</th></tr>${next.data.map(x => `<tr><td>${esc(new Date(x.scheduled_at).toLocaleString())}</td><td><a href="patient.html?id=${x.patient_id}">${esc(x.patients?.full_name)}</a></td><td>${esc(x.doctor?.full_name || 'Unassigned')}</td><td>${esc(x.reason)}</td></tr>`).join('')}</table></div>` : '<div class="empty">No upcoming appointments. <a href="appointments.html">Book one</a>.</div>'}`;
-}
-</script>
+  </section>
+
+  <section class="emergency" aria-label="Emergency">
+    <div><b>Emergency?</b> Do not wait for an appointment. Call us now or come straight to the emergency entrance.</div>
+    <a class="btn" data-h="emergencyPhone" href="tel:">Call</a>
+  </section>
+
+  <section class="section">
+    <div class="sec-head"><h2>How we can help</h2><p>Everything from a routine check-up to a hospital stay, in one place.</p></div>
+    <div class="cards">
+      <article class="card"><span class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/><rect x="4" y="4" width="16" height="16" rx="4"/></svg></span><h3>Emergency care</h3><p>Fast assessment and treatment when every minute matters.</p></article>
+      <article class="card"><span class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2.2.6 3.5 2.5 3.5 5"/></svg></span><h3>Outpatient clinics</h3><p>Consultations with our doctors, follow-up visits and routine check-ups.</p></article>
+      <article class="card"><span class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19V6M3 15h18v4M21 15v-2.5a3 3 0 0 0-3-3h-7V15"/><circle cx="7" cy="11.5" r="1.8"/></svg></span><h3>Inpatient wards</h3><p>Comfortable wards with round-the-clock nursing for patients who need to stay.</p></article>
+      <article class="card"><span class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2.2h12.4a1.5 1.5 0 0 0 1.3-2.2L14 9V3M7.5 15h9"/></svg></span><h3>Laboratory</h3><p>Blood tests and other investigations, with results going straight to your doctor.</p></article>
+      <article class="card"><span class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8v3H8zM7 6h10v15H7z"/><path d="M12 10v6M9 13h6"/></svg></span><h3>Pharmacy</h3><p>Your prescription filled on site, so you can leave with what you need.</p></article>
+      <article class="card"><span class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a4.2 4.2 0 0 1 7-3 4.2 4.2 0 0 1 7 3c0 5.6-7 10-7 10z"/></svg></span><h3>Maternity and women's health</h3><p>Care for mothers before, during and after birth.</p></article>
+    </div>
+    <p style="margin-top:14px"><a class="btn alt" href="services.html">All services</a></p>
+  </section>
+
+  <section class="section">
+    <div class="sec-head"><h2>Booking a visit</h2><p>Three steps, and no queue to get started.</p></div>
+    <ol class="steps">
+      <li><b>Send a request</b><span>Tell us who the visit is for, which service you need and the day you prefer.</span></li>
+      <li><b>We call you back</b><span>Our front desk phones to confirm a time that works for you.</span></li>
+      <li><b>Come in</b><span>Bring a form of ID and your insurance card, if you have one.</span></li>
+    </ol>
+    <p style="margin-top:14px"><a class="btn" href="book.html">Request an appointment</a></p>
+  </section>
+
+  <section class="staffband">
+    <div><b>Hospital staff?</b> Sign in to manage patients, appointments, wards, the lab, pharmacy and billing.</div>
+    <a class="btn alt" href="login.html">Staff login</a>
+  </section>
+
+  <div id="pubfoot"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>publicChrome('index');</script>
 </body>
 </html>

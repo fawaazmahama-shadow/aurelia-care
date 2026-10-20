@@ -4,7 +4,7 @@
 
 drop trigger if exists on_auth_user_created on auth.users;
 
-drop table if exists public.audit_log, public.insurance_claims, public.prescriptions, public.admissions,
+drop table if exists public.appointment_requests, public.audit_log, public.insurance_claims, public.prescriptions, public.admissions,
   public.beds, public.wards, public.lab_tests, public.medicines, public.invoices,
   public.visit_notes, public.appointments, public.patients, public.profiles cascade;
 

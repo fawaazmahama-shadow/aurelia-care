@@ -2,9 +2,9 @@
 
 ## Setup (about 15 minutes)
 1. Create a project at supabase.com.
-2. SQL Editor: run `schema.sql`, then `schema_v2.sql`, then `schema_v3.sql` (one at a time, in that order).
-3. Project Settings > API: copy the Project URL and anon public key into the top of `app.js`.
-4. Test locally: `python -m http.server 8000` and open http://localhost:8000/login.html
+2. SQL Editor: run `schema.sql`, `schema_v2.sql`, `schema_v3.sql`, then `schema_v4.sql` (one at a time, in that order, each once).
+3. Project Settings > API: copy the Project URL and anon public key into the top of `config.js`. Also put the hospital's real phone, email, address and hours in `config.js`.
+4. Test locally: `python -m http.server 8000` and open http://localhost:8000/ (the public website; staff sign in at login.html)
 5. Sign up in the app, then make yourself the first admin in the SQL Editor:
    `update public.profiles set role = 'admin' where email = 'you@example.com';`
 6. Sign in again. Use "Users and roles" to approve everyone else.
@@ -12,22 +12,30 @@
 ## Files
 Everything lives in one folder, with no subfolders.
 ```
-*.html            all the pages (login.html is the entry point)
-style.css         styles, including the video background layer
-app.js            Supabase keys, sign-in guard, sidebar, video background loader
+config.js         the ONLY file to edit: Supabase keys and hospital contact details
+app.js            shared code: sign-in guard, sidebar, public navigation, theme switch, video background
+style.css         all styles
 hospital.mp4, hospital.webm, poster.jpg    the looping background video
-schema.sql, schema_v2.sql, schema_v3.sql   database setup (run in Supabase only, do not need hosting)
+index.html, services.html, book.html, contact.html    the public website
+login.html, dashboard.html, requests.html, ...        the staff management system
+schema.sql, schema_v2.sql, schema_v3.sql, schema_v4.sql    database setup (run in Supabase only)
 reset.sql         erases the Aurelia Care tables so you can start over
 ```
-The background video plays muted and looping on every page. It is added by `app.js`, so new pages get it automatically as long as they load that script.
+
+## How the website and the system fit together
+- **Public website** (anyone can open): `index.html` (home), `services.html`, `book.html`, `contact.html`.
+- **Booking:** a visitor fills in `book.html`. The request is saved as a "new" row and appears under **Booking requests** for the front desk and admins. Visitors can only add requests; they can never read anything.
+- **Staff:** "Staff login" on the website leads to `login.html`, then `dashboard.html`. Signed-in staff see "Open dashboard" in the website menu and "Hospital website" in the sidebar.
 
 ## Pages
 | Page | Who can open it |
 |---|---|
+| index, services, book, contact (public website) | everyone |
 | login, forgot, reset, pending | everyone |
-| index (dashboard), patients, patient (detail, visit notes), appointments, profile | all staff |
+| dashboard, patients, patient (detail, visit notes), appointments, profile | all staff |
 | lab (order tests, record results) | admin, doctor, nurse (only admin and doctor order) |
 | pharmacy (stock) | admin, doctor, nurse view; admin, nurse change stock |
+| requests (website booking requests) | admin, receptionist |
 | billing (invoices, payments) | admin, receptionist |
 | admissions (wards and beds) | all staff view; admin, doctor, nurse admit and discharge; admin adds wards |
 | prescriptions | admin, doctor, nurse view; admin and doctor prescribe; admin and nurse dispense (stock drops automatically) |

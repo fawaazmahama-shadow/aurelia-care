@@ -18,12 +18,13 @@
   <div class="msg" id="msg" role="alert"></div>
 </div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 <script>
 let mode = 'in';
 if (!configured) needSetup();
 else {
-sb.auth.getSession().then(({ data:{ session } }) => { if (session) location.replace('index.html'); });
+sb.auth.getSession().then(({ data:{ session } }) => { if (session) location.replace('dashboard.html'); });
 
 $('swap').onclick = () => {
   mode = mode === 'in' ? 'up' : 'in';
@@ -39,11 +40,11 @@ $('go').onclick = async () => {
   if (!email || password.length < 6){ msg.textContent = 'Enter an email and a password of at least 6 characters.'; return; }
   if (mode === 'in'){
     const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) msg.textContent = error.message; else location.replace('index.html');
+    if (error) msg.textContent = error.message; else location.replace('dashboard.html');
   } else {
     const { data, error } = await sb.auth.signUp({ email, password, options:{ data:{ full_name: $('fn').value.trim() } } });
     if (error) msg.textContent = error.message;
-    else if (data.session) location.replace('index.html');
+    else if (data.session) location.replace('dashboard.html');
     else { msg.className = 'msg ok'; msg.textContent = 'Account created. Check your email to confirm it, then sign in.'; }
   }
 };

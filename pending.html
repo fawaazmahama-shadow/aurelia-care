@@ -14,13 +14,14 @@
   <div class="msg" id="msg" role="status"></div>
 </div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 <script>
 if (!configured) needSetup(); else (async () => {
   const { session, me } = await getMe();
   if (!session) return location.replace('login.html');
-  if (me && STAFF.includes(me.role)) return location.replace('index.html');
-  $('chk').onclick = async () => { const r = await getMe(); if (r.me && STAFF.includes(r.me.role)) location.replace('index.html'); else $('msg').textContent = 'Still waiting for approval.'; };
+  if (me && STAFF.includes(me.role)) return location.replace('dashboard.html');
+  $('chk').onclick = async () => { const r = await getMe(); if (r.me && STAFF.includes(r.me.role)) location.replace('dashboard.html'); else $('msg').textContent = 'Still waiting for approval.'; };
   $('out').onclick = async () => { await sb.auth.signOut(); location.replace('login.html'); };
 })();
 </script>

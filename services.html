@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Services · Aurelia Care</title>
+<meta name="description" content="Services at Aurelia Care hospital: emergency care, outpatient clinics, wards, laboratory, pharmacy and maternity.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="pubnav"></header>
+<div class="pub" role="main">
+
+  <div class="sec-head page-head"><h1>Our services</h1><p>What we offer, and who to ask when you arrive.</p></div>
+
+  <div class="cards wide">
+    <article class="card"><h3>Emergency care</h3><p>Our emergency team assesses and treats urgent illness and injury. If you can, call before you come so we can prepare for you.</p><ul><li>Urgent assessment</li><li>Treatment and stabilisation</li><li>Admission to a ward when needed</li></ul></article>
+    <article class="card"><h3>Outpatient clinics</h3><p>See a doctor without being admitted. Book ahead to keep your waiting time short.</p><ul><li>Consultations</li><li>Follow-up visits</li><li>Routine check-ups</li></ul></article>
+    <article class="card"><h3>Inpatient wards</h3><p>Patients who need to stay are admitted to a ward with a named bed and nursing care through the day and night.</p><ul><li>Admission and discharge</li><li>Nursing care</li><li>Daily review by a doctor</li></ul></article>
+    <article class="card"><h3>Laboratory</h3><p>Tests ordered by your doctor are run in our laboratory and the results are added to your record.</p><ul><li>Blood tests</li><li>Other investigations ordered by your doctor</li></ul></article>
+    <article class="card"><h3>Pharmacy</h3><p>Prescriptions are filled on site, so you collect your medicine before you leave.</p><ul><li>Dispensing of prescriptions</li><li>Advice on how to take your medicine</li></ul></article>
+    <article class="card"><h3>Maternity and women's health</h3><p>Care for mothers before, during and after birth.</p><ul><li>Antenatal visits</li><li>Delivery care</li><li>Postnatal follow-up</li></ul></article>
+  </div>
+
+  <section class="section">
+    <div class="sec-head"><h2>Paying for your care</h2><p>We accept cash, mobile money and card, and we can send claims to your insurer. Ask the front desk to confirm which insurers we work with before your visit.</p></div>
+  </section>
+
+  <section class="emergency" aria-label="Book">
+    <div><b>Ready to book?</b> Send us a request and we will call you to confirm a time.</div>
+    <a class="btn" href="book.html">Book an appointment</a>
+  </section>
+
+  <div id="pubfoot"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>publicChrome('services');</script>
+</body>
+</html>

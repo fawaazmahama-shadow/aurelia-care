@@ -2,8 +2,8 @@
 (function(){
   if (document.querySelector('.bg')) return;
   document.body.insertAdjacentHTML('afterbegin',
-    '<div class="bg" aria-hidden="true"><video id="bgv" autoplay muted loop playsinline preload="auto" poster="media/poster.jpg">' +
-    '<source src="media/hospital.mp4" type="video/mp4"><source src="media/hospital.webm" type="video/webm"></video></div><div class="bg-scrim"></div>');
+    '<div class="bg" aria-hidden="true"><video id="bgv" autoplay muted loop playsinline preload="auto" poster="poster.jpg">' +
+    '<source src="hospital.mp4" type="video/mp4"><source src="hospital.webm" type="video/webm"></video></div><div class="bg-scrim"></div>');
   const v = document.getElementById('bgv'); v.muted = true;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches){ v.removeAttribute('autoplay'); v.pause(); return; }
   const go = () => { const p = v.play(); if (p && p.catch) p.catch(() => {}); };

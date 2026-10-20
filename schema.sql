@@ -100,3 +100,8 @@ create policy "admin deletes appointments" on public.appointments for delete usi
 create policy "clinical read notes" on public.visit_notes for select using (public.my_role() in ('admin','doctor','nurse'));
 create policy "clinical add notes" on public.visit_notes for insert with check (public.my_role() in ('admin','doctor','nurse') and author_id = auth.uid());
 create policy "admin deletes notes" on public.visit_notes for delete using (public.my_role() = 'admin');
+
+-- Give a profile to any account that signed up before this script ran.
+insert into public.profiles (id, email, full_name)
+select id, email, coalesce(raw_user_meta_data->>'full_name', '') from auth.users
+on conflict (id) do nothing;

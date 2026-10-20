@@ -2,20 +2,22 @@
 
 ## Setup (about 15 minutes)
 1. Create a project at supabase.com.
-2. SQL Editor: open the files in the `sql/` folder and run `schema.sql`, then `schema_v2.sql`, then `schema_v3.sql` (one at a time, in that order).
+2. SQL Editor: run `schema.sql`, then `schema_v2.sql`, then `schema_v3.sql` (one at a time, in that order).
 3. Project Settings > API: copy the Project URL and anon public key into the top of `app.js`.
 4. Test locally: `python -m http.server 8000` and open http://localhost:8000/login.html
 5. Sign up in the app, then make yourself the first admin in the SQL Editor:
    `update public.profiles set role = 'admin' where email = 'you@example.com';`
 6. Sign in again. Use "Users and roles" to approve everyone else.
 
-## Folder layout
+## Files
+Everything lives in one folder, with no subfolders.
 ```
-index.html, login.html, ... (all pages)
-style.css         styles (includes the video background layer)
-app.js         Supabase keys, sign-in guard, sidebar, video background loader
-media/            hospital.mp4, hospital.webm (looping background video), poster.jpg
-sql/              schema.sql, schema_v2.sql, schema_v3.sql
+*.html            all the pages (login.html is the entry point)
+style.css         styles, including the video background layer
+app.js            Supabase keys, sign-in guard, sidebar, video background loader
+hospital.mp4, hospital.webm, poster.jpg    the looping background video
+schema.sql, schema_v2.sql, schema_v3.sql   database setup (run in Supabase only, do not need hosting)
+reset.sql         erases the Aurelia Care tables so you can start over
 ```
 The background video plays muted and looping on every page. It is added by `app.js`, so new pages get it automatically as long as they load that script.
 

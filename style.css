@@ -179,11 +179,11 @@ p.low{background:var(--low-bg);color:var(--low-ink);padding:10px 16px;border-rad
   aside a.nav{font-size:.92rem;gap:10px;padding:clamp(4px,.8vh,7px) 11px}
   aside a.nav::before{width:17px;height:17px}
   .who{padding-top:8px;font-size:.8rem}
-  .who button.ghost{margin-top:4px!important;padding:4px 11px!important}
+  .who button.ghost{padding:4px 11px!important}
 }
 @media (min-width:821px) and (max-height:640px){
   aside a.nav{padding:3px 10px;font-size:.88rem}
-  .who br{display:none}
+  .who button{display:block;margin-top:4px!important}
 }
 
 /* Sidebar icons (drawn in CSS so no script changes are needed) */

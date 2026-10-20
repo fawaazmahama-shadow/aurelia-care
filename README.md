@@ -3,7 +3,7 @@
 ## Setup (about 15 minutes)
 1. Create a project at supabase.com.
 2. SQL Editor: open the files in the `sql/` folder and run `schema.sql`, then `schema_v2.sql`, then `schema_v3.sql` (one at a time, in that order).
-3. Project Settings > API: copy the Project URL and anon public key into the top of `js/app.js`.
+3. Project Settings > API: copy the Project URL and anon public key into the top of `app.js`.
 4. Test locally: `python -m http.server 8000` and open http://localhost:8000/login.html
 5. Sign up in the app, then make yourself the first admin in the SQL Editor:
    `update public.profiles set role = 'admin' where email = 'you@example.com';`
@@ -12,12 +12,12 @@
 ## Folder layout
 ```
 index.html, login.html, ... (all pages)
-css/style.css     styles (includes the video background layer)
-js/app.js         Supabase keys, sign-in guard, sidebar, video background loader
+style.css         styles (includes the video background layer)
+app.js         Supabase keys, sign-in guard, sidebar, video background loader
 media/            hospital.mp4, hospital.webm (looping background video), poster.jpg
 sql/              schema.sql, schema_v2.sql, schema_v3.sql
 ```
-The background video plays muted and looping on every page. It is added by `js/app.js`, so new pages get it automatically as long as they load that script.
+The background video plays muted and looping on every page. It is added by `app.js`, so new pages get it automatically as long as they load that script.
 
 ## Pages
 | Page | Who can open it |

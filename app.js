@@ -27,7 +27,7 @@ const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) :
 
 function needSetup(){
   [...document.body.children].forEach(n => { if (!n.classList.contains('bg') && !n.classList.contains('bg-scrim') && n.tagName !== 'SCRIPT') n.remove(); });
-  document.body.insertAdjacentHTML('beforeend', '<div class="center"><div class="box" style="max-width:520px"><h1>Connect Supabase</h1><p>Open <code>js/app.js</code> and set SUPABASE_URL and SUPABASE_ANON_KEY at the top. Both are in your Supabase project under Project Settings, API.</p></div></div>');
+  document.body.insertAdjacentHTML('beforeend', '<div class="center"><div class="box" style="max-width:520px"><h1>Connect Supabase</h1><p>Open <code>app.js</code> and set SUPABASE_URL and SUPABASE_ANON_KEY at the top. Both are in your Supabase project under Project Settings, API.</p></div></div>');
 }
 
 async function getMe(){

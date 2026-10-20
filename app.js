@@ -1,3 +1,19 @@
+// Light / dark switch. The choice is remembered in this browser.
+(function(){
+  let t = null; try { t = localStorage.getItem('ac-theme'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  const root = document.documentElement; root.setAttribute('data-theme', t);
+  if (document.querySelector('.theme-toggle')) return;
+  document.body.insertAdjacentHTML('beforeend',
+    '<button class="theme-toggle" type="button" id="themeBtn" aria-label="Switch between light and dark mode" title="Switch light / dark">' +
+    '<svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>' +
+    '<svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button>');
+  document.getElementById('themeBtn').onclick = () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next); try { localStorage.setItem('ac-theme', next); } catch (e) {}
+  };
+})();
+
 // Full-screen looping video background, shown on every page.
 (function(){
   if (document.querySelector('.bg')) return;
@@ -26,7 +42,7 @@ const configured = !SUPABASE_URL.startsWith('YOUR_');
 const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 function needSetup(){
-  [...document.body.children].forEach(n => { if (!n.classList.contains('bg') && !n.classList.contains('bg-scrim') && n.tagName !== 'SCRIPT') n.remove(); });
+  [...document.body.children].forEach(n => { if (!n.classList.contains('bg') && !n.classList.contains('bg-scrim') && !n.classList.contains('theme-toggle') && n.tagName !== 'SCRIPT') n.remove(); });
   document.body.insertAdjacentHTML('beforeend', '<div class="center"><div class="box" style="max-width:520px"><h1>Connect Supabase</h1><p>Open <code>app.js</code> and set SUPABASE_URL and SUPABASE_ANON_KEY at the top. Both are in your Supabase project under Project Settings, API.</p></div></div>');
 }
 

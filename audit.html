@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit log · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+let me;
+(async () => { me = await guard('audit', { admin:true }); if (me) view(''); })();
+async function view(t){
+  let q = sb.from('audit_log').select('*, user:profiles!audit_log_user_id_fkey(full_name, email)').order('created_at', { ascending:false }).limit(200);
+  if (t) q = q.eq('table_name', t);
+  const { data, error } = await q; if (error) return err(error);
+  const tables = ['','patients','appointments','visit_notes','invoices','insurance_claims','medicines','prescriptions','lab_tests','admissions','wards','beds','profiles'];
+  $('view').innerHTML = `<div class="bar"><h2>Audit log</h2><select id="t" style="max-width:220px">${tables.map(x => `<option value="${x}" ${x === t ? 'selected' : ''}>${x || 'All records'}</option>`).join('')}</select></div>
+    <p style="color:var(--mute)">Shows who added, changed or deleted records (latest 200). Viewing a record is not logged.</p>
+    ${data.length ? `<div class="wrap"><table><tr><th>When</th><th>Who</th><th>Action</th><th>Record type</th><th>Details</th></tr>
+    ${data.map(x => `<tr><td>${esc(new Date(x.created_at).toLocaleString())}</td><td>${esc(x.user?.full_name || x.user?.email || 'System')}</td><td><span class="pill">${esc(x.action)}</span></td><td>${esc(x.table_name)}</td><td>${x.details ? esc(x.details.old_role + ' to ' + x.details.new_role) : ''}</td></tr>`).join('')}</table></div>` : '<div class="empty">Nothing logged yet.</div>'}`;
+  $('t').onchange = e => view(e.target.value);
+}
+</script>
+</body>
+</html>

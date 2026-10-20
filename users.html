@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Users and roles · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+let me;
+(async () => { me = await guard('users', { admin:true }); if (me) view(); })();
+async function view(){
+  const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending:false }); if (error) return err(error);
+  const waiting = data.filter(u => u.role === 'pending').length;
+  $('view').innerHTML = `<div class="bar"><h2>Users and roles</h2></div>
+    ${waiting ? `<p class="low">${waiting} account${waiting > 1 ? 's are' : ' is'} waiting for approval.</p>` : ''}
+    <div class="wrap"><table><tr><th>Name</th><th>Email</th><th>Joined</th><th>Role</th></tr>
+    ${data.map(u => `<tr><td><b>${esc(u.full_name || '(no name)')}</b></td><td>${esc(u.email)}</td><td>${esc(new Date(u.created_at).toLocaleDateString())}</td>
+    <td>${u.id === me.id ? `<span class="pill">${esc(u.role)} (you)</span>` : `<select data-u="${u.id}" style="width:auto">${ROLES.map(r => `<option ${r === u.role ? 'selected' : ''}>${r}</option>`).join('')}</select>`}</td></tr>`).join('')}</table></div>`;
+  document.querySelectorAll('[data-u]').forEach(s => s.onchange = async () => {
+    const { error } = await sb.from('profiles').update({ role: s.value }).eq('id', s.dataset.u); if (error) err(error); view(); });
+}
+</script>
+</body>
+</html>

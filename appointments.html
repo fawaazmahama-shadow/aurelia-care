@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Appointments · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+let me, filter = 'scheduled';
+(async () => { me = await guard('appointments'); if (me) view(); })();
+async function view(){
+  let q = sb.from('appointments').select('*, patients(full_name), doctor:profiles!appointments_doctor_id_fkey(full_name)').order('scheduled_at', { ascending: filter === 'scheduled' }).limit(300);
+  if (filter) q = q.eq('status', filter);
+  const [r, p, d] = await Promise.all([q, sb.from('patients').select('id, full_name').order('full_name'), sb.from('profiles').select('id, full_name, email').eq('role', 'doctor').order('full_name')]);
+  if (r.error) return err(r.error);
+  $('view').innerHTML = `<div class="bar"><h2>Appointments</h2><div style="display:flex;gap:8px"><select id="flt" style="width:auto">${[['scheduled','Upcoming'],['completed','Completed'],['cancelled','Cancelled'],['','All']].map(([v, t]) => `<option value="${v}" ${v === filter ? 'selected' : ''}>${t}</option>`).join('')}</select><button id="add">Book appointment</button></div></div>
+    <form id="f" class="form hide"><div><label>Patient</label><select name="patient_id" required><option value="">Choose patient</option>${(p.data || []).map(x => `<option value="${x.id}">${esc(x.full_name)}</option>`).join('')}</select></div>
+      <div><label>Doctor</label><select name="doctor_id"><option value="">Unassigned</option>${(d.data || []).map(x => `<option value="${x.id}">${esc(x.full_name || x.email)}</option>`).join('')}</select></div>
+      <div><label>Date and time</label><input name="scheduled_at" type="datetime-local" required></div><div><label>Reason</label><input name="reason"></div>
+      <div class="full"><button>Save appointment</button></div></form>
+    ${r.data.length ? `<div class="wrap"><table><tr><th>When</th><th>Patient</th><th>Doctor</th><th>Reason</th><th>Status</th></tr>
+    ${r.data.map(x => `<tr><td>${esc(new Date(x.scheduled_at).toLocaleString())}</td><td><a href="patient.html?id=${x.patient_id}">${esc(x.patients?.full_name)}</a></td><td>${esc(x.doctor?.full_name || 'Unassigned')}</td><td>${esc(x.reason)}</td>
+    <td><select data-s="${x.id}" style="width:auto">${['scheduled','completed','cancelled'].map(s => `<option ${s === x.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td></tr>`).join('')}</table></div>` : '<div class="empty">No appointments here.</div>'}`;
+  $('flt').onchange = e => { filter = e.target.value; view(); };
+  $('add').onclick = () => $('f').classList.toggle('hide');
+  $('f').onsubmit = async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
+    f.scheduled_at = new Date(f.scheduled_at).toISOString(); f.created_by = me.id; Object.keys(f).forEach(k => f[k] === '' && (f[k] = null));
+    const { error } = await sb.from('appointments').insert(f); if (error) return err(error); view(); };
+  document.querySelectorAll('[data-s]').forEach(s => s.onchange = async () => {
+    const { error } = await sb.from('appointments').update({ status: s.value }).eq('id', s.dataset.s); if (error) err(error); view(); });
+}
+</script>
+</body>
+</html>

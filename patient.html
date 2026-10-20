@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patient · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+let me; const pid = new URLSearchParams(location.search).get('id');
+(async () => { me = await guard('patients'); if (!me) return; if (!pid) return location.replace('patients.html'); load(); })();
+
+async function load(){
+  const clin = ['admin','doctor','nurse'].includes(me.role), bill = ['admin','receptionist'].includes(me.role);
+  const [p, n, a, i, l, rx] = await Promise.all([
+    sb.from('patients').select('*').eq('id', pid).single(),
+    clin ? sb.from('visit_notes').select('*, author:profiles!visit_notes_author_id_fkey(full_name)').eq('patient_id', pid).order('created_at', { ascending:false }) : null,
+    sb.from('appointments').select('*, doctor:profiles!appointments_doctor_id_fkey(full_name)').eq('patient_id', pid).order('scheduled_at', { ascending:false }),
+    bill ? sb.from('invoices').select('*').eq('patient_id', pid).order('created_at', { ascending:false }) : null,
+    clin ? sb.from('lab_tests').select('*').eq('patient_id', pid).order('created_at', { ascending:false }) : null,
+    clin ? sb.from('prescriptions').select('*, medicines(name)').eq('patient_id', pid).order('created_at', { ascending:false }) : null
+  ]);
+  if (p.error || !p.data){ $('view').innerHTML = '<div class="empty">Patient not found. <a href="patients.html">Back to patients</a></div>'; return; }
+  const x = p.data, when = d => esc(new Date(d).toLocaleString());
+  $('view').innerHTML = `
+    <div class="bar"><h2>${esc(x.full_name)}</h2><div class="noprint"><button class="ghost" onclick="print()">Print</button> <a class="btn" href="patients.html">All patients</a></div></div>
+    <form id="ef" class="form">
+      <div><label>Full name</label><input name="full_name" value="${esc(x.full_name)}" required></div>
+      <div><label>Date of birth</label><input name="dob" type="date" value="${esc(x.dob)}"></div>
+      <div><label>Gender</label><select name="gender">${['','Female','Male','Other'].map(g => `<option value="${g}" ${g === (x.gender || '') ? 'selected' : ''}>${g || 'Not stated'}</option>`).join('')}</select></div>
+      <div><label>Phone</label><input name="phone" value="${esc(x.phone)}"></div>
+      <div class="full"><label>Address</label><input name="address" value="${esc(x.address)}"></div>
+      <div class="full"><label>General notes</label><textarea name="notes" rows="2">${esc(x.notes)}</textarea></div>
+      <div class="full noprint"><button>Save changes</button></div>
+    </form>
+    ${clin ? `<h2 class="sec">Visit notes</h2>
+      <form id="nf" class="form noprint"><div><label>Diagnosis</label><input name="diagnosis"></div><div class="full"><label>Notes</label><textarea name="notes" rows="3" required></textarea></div><div class="full"><button>Add note</button></div></form>
+      ${n.data && n.data.length ? n.data.map(v => `<div class="note"><b>${esc(v.diagnosis || 'Visit note')}</b><br>${esc(v.notes)}<br><small>${esc(v.author?.full_name || 'Staff')} · ${when(v.created_at)}</small></div>`).join('') : '<div class="empty">No visit notes yet.</div>'}` : ''}
+    <h2 class="sec">Appointments</h2>
+    ${a.data && a.data.length ? `<div class="wrap"><table><tr><th>When</th><th>Doctor</th><th>Reason</th><th>Status</th></tr>${a.data.map(v => `<tr><td>${when(v.scheduled_at)}</td><td>${esc(v.doctor?.full_name || 'Unassigned')}</td><td>${esc(v.reason)}</td><td><span class="pill">${esc(v.status)}</span></td></tr>`).join('')}</table></div>` : '<div class="empty">No appointments.</div>'}
+    ${clin ? `<h2 class="sec">Lab tests</h2>${l.data && l.data.length ? `<div class="wrap"><table><tr><th>Test</th><th>Status</th><th>Result</th></tr>${l.data.map(v => `<tr><td>${esc(v.test_name)}</td><td><span class="pill">${esc(v.status)}</span></td><td>${esc(v.result)}</td></tr>`).join('')}</table></div>` : '<div class="empty">No lab tests.</div>'}` : ''}
+    ${clin ? `<h2 class="sec">Prescriptions</h2>${rx && rx.data && rx.data.length ? `<div class="wrap"><table><tr><th>Date</th><th>Medicine</th><th>Dosage</th><th>Qty</th><th>Status</th></tr>${rx.data.map(v => `<tr><td>${when(v.created_at)}</td><td>${esc(v.medicines?.name)}</td><td>${esc(v.dosage)}</td><td>${v.quantity}</td><td><span class="pill">${esc(v.status)}</span></td></tr>`).join('')}</table></div>` : '<div class="empty">No prescriptions.</div>'}` : ''}
+    ${bill ? `<h2 class="sec">Invoices</h2>${i.data && i.data.length ? `<div class="wrap"><table><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th></tr>${i.data.map(v => `<tr><td>${when(v.created_at)}</td><td>${esc(v.description)}</td><td>${money(v.amount)}</td><td><span class="pill">${esc(v.status)}</span></td></tr>`).join('')}</table></div>` : '<div class="empty">No invoices.</div>'}` : ''}`;
+  $('ef').onsubmit = async e => {
+    e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); Object.keys(f).forEach(k => f[k] === '' && (f[k] = null));
+    const { error } = await sb.from('patients').update(f).eq('id', pid); if (error) return err(error); load();
+  };
+  if (clin) $('nf').onsubmit = async e => {
+    e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); f.patient_id = pid; f.author_id = me.id; if (!f.diagnosis) f.diagnosis = null;
+    const { error } = await sb.from('visit_notes').insert(f); if (error) return err(error); load();
+  };
+}
+</script>
+</body>
+</html>

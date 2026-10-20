@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My account · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+let me;
+(async () => { me = await guard('profile'); if (!me) return;
+  $('view').innerHTML = `<div class="bar"><h2>My account</h2></div>
+    <form id="nf" class="form"><div><label>Full name</label><input name="full_name" value="${esc(me.full_name)}" required></div><div><label>Email</label><input value="${esc(me.email)}" disabled></div><div><label>Role</label><input value="${esc(me.role)}" disabled></div><div class="full"><button>Save name</button></div></form>
+    <h2 class="sec">Change password</h2>
+    <form id="pf" class="form"><div><label>New password</label><input name="pw" type="password" minlength="6" required autocomplete="new-password"></div><div class="full"><button>Update password</button></div></form>`;
+  $('nf').onsubmit = async e => { e.preventDefault(); const { error } = await sb.from('profiles').update({ full_name: new FormData(e.target).get('full_name').trim() }).eq('id', me.id); error ? err(error) : alert('Name saved.'); };
+  $('pf').onsubmit = async e => { e.preventDefault(); const { error } = await sb.auth.updateUser({ password: new FormData(e.target).get('pw') }); if (error) return err(error); e.target.reset(); alert('Password updated.'); };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Awaiting approval · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="center"><div class="box">
+  <h1>Aurelia Care</h1><p>Your account is waiting for approval. An administrator needs to give you a role before you can use the system.</p>
+  <button class="full" id="chk">Check again</button>
+  <button class="swap" id="out">Sign out</button>
+  <div class="msg" id="msg" role="status"></div>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+if (!configured) needSetup(); else (async () => {
+  const { session, me } = await getMe();
+  if (!session) return location.replace('login.html');
+  if (me && STAFF.includes(me.role)) return location.replace('index.html');
+  $('chk').onclick = async () => { const r = await getMe(); if (r.me && STAFF.includes(r.me.role)) location.replace('index.html'); else $('msg').textContent = 'Still waiting for approval.'; };
+  $('out').onclick = async () => { await sb.auth.signOut(); location.replace('login.html'); };
+})();
+</script>
+</body>
+</html>

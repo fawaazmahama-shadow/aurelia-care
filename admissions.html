@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admissions · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+let me, bedPick = null;
+(async () => { me = await guard('admissions'); if (me) view(); })();
+async function view(){
+  const [w, b, a, p] = await Promise.all([
+    sb.from('wards').select('*').order('name'), sb.from('beds').select('*').order('label'),
+    sb.from('admissions').select('*, patients(full_name)').is('discharged_at', null),
+    sb.from('patients').select('id, full_name').order('full_name')
+  ]);
+  if (w.error) return err(w.error);
+  const clin = ['admin','doctor','nurse'].includes(me.role), admin = me.role === 'admin';
+  const occ = {}; (a.data || []).forEach(x => occ[x.bed_id] = x);
+  const used = (b.data || []).filter(x => occ[x.id]).length, total = (b.data || []).length;
+  const taken = new Set((a.data || []).map(x => x.patient_id));
+  $('view').innerHTML = `<div class="bar"><h2>Admissions and beds</h2></div>
+    <div class="stats"><div class="stat"><b>${total}</b><span>Beds</span></div><div class="stat"><b>${used}</b><span>Occupied</span></div><div class="stat"><b>${total - used}</b><span>Free</span></div></div>
+    ${admin ? `<form id="wf" class="form"><div><label>New ward name</label><input name="name" required placeholder="Maternity"></div><div><label>Number of beds</label><input name="beds" type="number" min="1" max="100" value="10" required></div><div class="full"><button>Add ward</button></div></form>` : ''}
+    <form id="af" class="form hide"><div class="full"><b id="atitle"></b></div>
+      <div><label>Patient</label><select name="patient_id" required><option value="">Choose patient</option>${(p.data || []).filter(x => !taken.has(x.id)).map(x => `<option value="${x.id}">${esc(x.full_name)}</option>`).join('')}</select></div>
+      <div><label>Reason</label><input name="reason"></div><div class="full"><button>Admit patient</button> <button type="button" class="ghost" id="acancel">Cancel</button></div></form>
+    ${w.data.length ? w.data.map(x => `<div class="panel"><h2 class="sec" style="margin-top:0">${esc(x.name)}</h2><div class="beds">
+      ${(b.data || []).filter(y => y.ward_id === x.id).map(y => { const o = occ[y.id];
+        return o ? `<div class="bed busy"><b>${esc(y.label)}</b><a href="patient.html?id=${o.patient_id}">${esc(o.patients?.full_name)}</a><br><small>Since ${esc(new Date(o.admitted_at).toLocaleDateString())}</small>${clin ? `<br><button class="ghost" style="padding:4px 10px;margin-top:6px" data-dis="${o.id}">Discharge</button>` : ''}</div>`
+          : `<div class="bed free"><b>${esc(y.label)}</b><small>Free</small>${clin ? `<br><button style="padding:4px 10px;margin-top:6px" data-adm="${y.id}" data-name="${esc(x.name + ' · ' + y.label)}">Admit</button>` : ''}</div>`; }).join('')}
+    </div></div>`).join('') : `<div class="empty">${admin ? 'Add your first ward above.' : 'No wards have been set up yet. Ask an admin.'}</div>`}`;
+  if (admin) $('wf').onsubmit = async e => {
+    e.preventDefault(); const f = new FormData(e.target), n = Math.min(100, Math.max(1, Number(f.get('beds'))));
+    const { data, error } = await sb.from('wards').insert({ name: f.get('name').trim() }).select().single(); if (error) return err(error);
+    const rows = Array.from({ length:n }, (_, i) => ({ ward_id: data.id, label: 'Bed ' + (i + 1) }));
+    const r = await sb.from('beds').insert(rows); if (r.error) return err(r.error); view();
+  };
+  document.querySelectorAll('[data-adm]').forEach(x => x.onclick = () => { bedPick = x.dataset.adm; $('atitle').textContent = 'Admit to ' + x.dataset.name; $('af').classList.remove('hide'); $('af').scrollIntoView({ behavior:'smooth' }); });
+  $('acancel').onclick = () => $('af').classList.add('hide');
+  $('af').onsubmit = async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); f.bed_id = bedPick; f.admitted_by = me.id; if (!f.reason) f.reason = null;
+    const { error } = await sb.from('admissions').insert(f); if (error) return err(error); view(); };
+  document.querySelectorAll('[data-dis]').forEach(x => x.onclick = async () => {
+    const note = prompt('Discharge note (optional)'); if (note === null) return;
+    const { error } = await sb.from('admissions').update({ discharged_at:new Date().toISOString(), discharge_note: note || null }).eq('id', x.dataset.dis); if (error) return err(error); view(); });
+}
+</script>
+</body>
+</html>

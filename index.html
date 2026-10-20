@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+let me;
+(async () => { me = await guard('index'); if (me) view(); })();
+const count = (t, f) => { const q = sb.from(t).select('id', { count:'exact', head:true }); return f ? f(q) : q; };
+async function view(){
+  const clin = ['admin','doctor','nurse'].includes(me.role), bill = ['admin','receptionist'].includes(me.role);
+  const a = new Date(); a.setHours(0, 0, 0, 0); const b = new Date(a); b.setDate(b.getDate() + 1);
+  const [pt, today, adm, beds, unpaid, low, labs, next] = await Promise.all([
+    count('patients'),
+    count('appointments', q => q.gte('scheduled_at', a.toISOString()).lt('scheduled_at', b.toISOString()).eq('status', 'scheduled')),
+    count('admissions', q => q.is('discharged_at', null)), count('beds'),
+    bill ? sb.from('invoices').select('amount').eq('status', 'unpaid') : null,
+    clin ? sb.from('medicines').select('stock, reorder_level') : null,
+    clin ? count('lab_tests', q => q.eq('status', 'ordered')) : null,
+    sb.from('appointments').select('*, patients(full_name), doctor:profiles!appointments_doctor_id_fkey(full_name)').eq('status', 'scheduled').gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(8)
+  ]);
+  const stat = (n, t) => `<div class="stat"><b>${n}</b><span>${t}</span></div>`;
+  const lowN = low && low.data ? low.data.filter(m => m.stock <= m.reorder_level).length : 0;
+  $('view').innerHTML = `<div class="bar"><h2>Welcome, ${esc((me.full_name || me.email).split(' ')[0])}</h2><span class="pill">${esc(me.role)}</span></div>
+    <div class="stats">
+      ${stat(pt.count ?? 0, 'Patients')}${stat(today.count ?? 0, 'Appointments today')}${stat((adm.count ?? 0) + ' / ' + (beds.count ?? 0), 'Beds occupied')}
+      ${unpaid && unpaid.data ? stat(money(unpaid.data.reduce((t, x) => t + Number(x.amount), 0)), 'Unpaid invoices') : ''}
+      ${labs ? stat(labs.count ?? 0, 'Lab tests awaiting results') : ''}${low ? stat(lowN, 'Medicines to reorder') : ''}
+    </div>
+    <h2 class="sec">Upcoming appointments</h2>
+    ${next.data && next.data.length ? `<div class="wrap"><table><tr><th>When</th><th>Patient</th><th>Doctor</th><th>Reason</th></tr>${next.data.map(x => `<tr><td>${esc(new Date(x.scheduled_at).toLocaleString())}</td><td><a href="patient.html?id=${x.patient_id}">${esc(x.patients?.full_name)}</a></td><td>${esc(x.doctor?.full_name || 'Unassigned')}</td><td>${esc(x.reason)}</td></tr>`).join('')}</table></div>` : '<div class="empty">No upcoming appointments. <a href="appointments.html">Book one</a>.</div>'}`;
+}
+</script>
+</body>
+</html>

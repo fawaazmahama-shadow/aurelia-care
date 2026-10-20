@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insurance claims · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+let me, inv = [];
+(async () => { me = await guard('claims', { roles:['admin','receptionist'] }); if (me) view(); })();
+async function view(){
+  const [c, i] = await Promise.all([
+    sb.from('insurance_claims').select('*, patients(full_name), invoices(description, amount)').order('created_at', { ascending:false }),
+    sb.from('invoices').select('id, patient_id, description, amount, patients(full_name)').eq('status','unpaid').order('created_at', { ascending:false })
+  ]);
+  if (c.error) return err(c.error); inv = i.data || [];
+  const sum = s => c.data.filter(x => x.status === s).reduce((t, x) => t + Number(x.amount_claimed), 0);
+  $('view').innerHTML = `<div class="bar"><h2>Insurance claims</h2><button id="add">New claim</button></div>
+    <div class="stats"><div class="stat"><b>${money(sum('submitted') + sum('approved'))}</b><span>Awaiting payment</span></div><div class="stat"><b>${money(sum('paid'))}</b><span>Paid by insurers</span></div></div>
+    <form id="f" class="form hide"><div class="full"><label>Unpaid invoice</label><select name="invoice_id" id="inv" required><option value="">Choose invoice</option>${inv.map(x => `<option value="${x.id}">${esc(x.patients?.full_name)} · ${esc(x.description)} · ${money(x.amount)}</option>`).join('')}</select></div>
+      <div><label>Insurance provider</label><input name="provider" required></div><div><label>Policy number</label><input name="policy_number"></div>
+      <div><label>Amount claimed (GH₵)</label><input name="amount_claimed" id="amt" type="number" min="0" step="0.01" required></div><div class="full"><label>Notes</label><input name="notes"></div>
+      <div class="full"><button>Submit claim</button></div></form>
+    ${c.data.length ? `<div class="wrap"><table><tr><th>Date</th><th>Patient</th><th>Provider</th><th>Policy</th><th>Claimed</th><th>Status</th></tr>
+    ${c.data.map(x => `<tr><td>${esc(new Date(x.created_at).toLocaleDateString())}</td><td><a href="patient.html?id=${x.patient_id}">${esc(x.patients?.full_name)}</a></td><td>${esc(x.provider)}</td><td>${esc(x.policy_number)}</td><td>${money(x.amount_claimed)}</td>
+    <td><select data-s="${x.id}" data-inv="${x.invoice_id}">${['submitted','approved','rejected','paid'].map(s => `<option ${s === x.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td></tr>`).join('')}</table></div>` : '<div class="empty">No claims yet. Start one from an unpaid invoice.</div>'}`;
+  $('add').onclick = () => $('f').classList.toggle('hide');
+  $('inv').onchange = e => { const x = inv.find(y => y.id === e.target.value); $('amt').value = x ? x.amount : ''; };
+  $('f').onsubmit = async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); const x = inv.find(y => y.id === f.invoice_id);
+    f.patient_id = x.patient_id; f.amount_claimed = Number(f.amount_claimed); f.created_by = me.id; Object.keys(f).forEach(k => f[k] === '' && (f[k] = null));
+    const { error } = await sb.from('insurance_claims').insert(f); if (error) return err(error); view(); };
+  document.querySelectorAll('[data-s]').forEach(s => s.onchange = async () => {
+    const { error } = await sb.from('insurance_claims').update({ status:s.value, updated_at:new Date().toISOString() }).eq('id', s.dataset.s); if (error) { err(error); return view(); }
+    if (s.value === 'paid'){ const r = await sb.from('invoices').update({ status:'paid', payment_method:'Insurance', paid_at:new Date().toISOString() }).eq('id', s.dataset.inv); if (r.error) err(r.error); }
+    view(); });
+}
+</script>
+</body>
+</html>

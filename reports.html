@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reports · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+let me;
+(async () => { me = await guard('reports', { admin:true }); if (me) view(); })();
+const key = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+const bars = (rows, fmt = v => v) => { const max = Math.max(1, ...rows.map(r => r[1])); return rows.map(r => `<div class="bar-row"><span>${esc(r[0])}</span><i style="width:${r[1] / max * 100}%"></i><span>${esc(fmt(r[1]))}</span></div>`).join(''); };
+async function view(){
+  const since = new Date(); since.setMonth(since.getMonth() - 5); since.setDate(1); since.setHours(0, 0, 0, 0);
+  const [pt, ap, iv, bd, ad, md, lt] = await Promise.all([
+    sb.from('patients').select('created_at').gte('created_at', since.toISOString()),
+    sb.from('appointments').select('status'),
+    sb.from('invoices').select('amount, status, paid_at'),
+    sb.from('beds').select('id'), sb.from('admissions').select('id').is('discharged_at', null),
+    sb.from('medicines').select('name, stock, reorder_level'), sb.from('lab_tests').select('test_name')
+  ]);
+  for (const r of [pt, ap, iv, bd, ad, md, lt]) if (r.error) return err(r.error);
+  const months = []; for (let i = 5; i >= 0; i--){ const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); months.push(key(d)); }
+  const label = k => new Date(k + '-01').toLocaleDateString(undefined, { month:'short', year:'numeric' });
+  const regs = months.map(k => [label(k), pt.data.filter(x => key(new Date(x.created_at)) === k).length]);
+  const rev = months.map(k => [label(k), iv.data.filter(x => x.status === 'paid' && x.paid_at && key(new Date(x.paid_at)) === k).reduce((t, x) => t + Number(x.amount), 0)]);
+  const count = (arr, f) => Object.entries(arr.reduce((o, x) => (o[f(x)] = (o[f(x)] || 0) + 1, o), {}));
+  const low = md.data.filter(m => m.stock <= m.reorder_level), occ = bd.data.length ? Math.round(ad.data.length / bd.data.length * 100) : 0;
+  const top = count(lt.data, x => x.test_name).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  $('view').innerHTML = `<div class="bar"><h2>Reports</h2><div class="noprint"><button class="ghost" onclick="print()">Print</button> <button class="ghost" id="ep">Export patients (CSV)</button> <button class="ghost" id="ei">Export invoices (CSV)</button></div></div>
+    <div class="stats"><div class="stat"><b>${occ}%</b><span>Bed occupancy (${ad.data.length} of ${bd.data.length})</span></div>
+      <div class="stat"><b>${money(iv.data.filter(x => x.status === 'unpaid').reduce((t, x) => t + Number(x.amount), 0))}</b><span>Outstanding invoices</span></div>
+      <div class="stat"><b>${low.length}</b><span>Medicines to reorder</span></div></div>
+    <div class="panel"><b>New patients per month</b>${bars(regs)}</div>
+    <div class="panel"><b>Revenue collected per month</b>${bars(rev, money)}</div>
+    <div class="panel"><b>Appointments by status</b>${ap.data.length ? bars(count(ap.data, x => x.status)) : '<p class="note">No appointments yet.</p>'}</div>
+    <div class="panel"><b>Most ordered lab tests</b>${top.length ? bars(top) : '<p class="note">No lab tests yet.</p>'}</div>
+    <div class="panel"><b>Medicines at or below reorder level</b>${low.length ? bars(low.map(m => [m.name, m.stock])) : '<p class="note">Stock levels are healthy.</p>'}</div>`;
+  $('ep').onclick = async () => { const r = await sb.from('patients').select('*'); r.error ? err(r.error) : downloadCSV('patients.csv', r.data); };
+  $('ei').onclick = async () => { const r = await sb.from('invoices').select('*'); r.error ? err(r.error) : downloadCSV('invoices.csv', r.data); };
+}
+</script>
+</body>
+</html>

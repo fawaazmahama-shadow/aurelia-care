@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Aurelia Care</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="center"><div class="box">
+  <h1>Aurelia Care</h1><p id="sub">Calm, coordinated care. Sign in to continue.</p>
+  <div id="nameRow" class="hide"><label for="fn">Full name</label><input id="fn" autocomplete="name"></div>
+  <label for="em">Email</label><input id="em" type="email" autocomplete="email">
+  <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password">
+  <button class="full" id="go">Sign in</button>
+  <button class="swap" id="swap">Create an account</button>
+  <a href="forgot.html" style="display:block;margin-top:10px;font-size:.9rem;color:var(--pri)">Forgot your password?</a>
+  <div class="msg" id="msg" role="alert"></div>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+let mode = 'in';
+if (!configured) needSetup();
+else {
+sb.auth.getSession().then(({ data:{ session } }) => { if (session) location.replace('index.html'); });
+
+$('swap').onclick = () => {
+  mode = mode === 'in' ? 'up' : 'in';
+  $('nameRow').classList.toggle('hide', mode === 'in');
+  $('go').textContent = mode === 'in' ? 'Sign in' : 'Create account';
+  $('swap').textContent = mode === 'in' ? 'Create an account' : 'I already have an account';
+  $('sub').textContent = mode === 'in' ? 'Calm, coordinated care. Sign in to continue.' : 'New accounts need admin approval.';
+  $('msg').textContent = '';
+};
+$('go').onclick = async () => {
+  const email = $('em').value.trim(), password = $('pw').value, msg = $('msg');
+  msg.className = 'msg'; msg.textContent = '';
+  if (!email || password.length < 6){ msg.textContent = 'Enter an email and a password of at least 6 characters.'; return; }
+  if (mode === 'in'){
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) msg.textContent = error.message; else location.replace('index.html');
+  } else {
+    const { data, error } = await sb.auth.signUp({ email, password, options:{ data:{ full_name: $('fn').value.trim() } } });
+    if (error) msg.textContent = error.message;
+    else if (data.session) location.replace('index.html');
+    else { msg.className = 'msg ok'; msg.textContent = 'Account created. Check your email to confirm it, then sign in.'; }
+  }
+};
+}
+</script>
+</body>
+</html>
